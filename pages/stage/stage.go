@@ -76,6 +76,10 @@ func (s *Stage) OnEvent(ev event.Event) {
 				fmt.Println("release pointer pos:", x.Position, "top left pos:", c.presentPos)
 				if s.arena.Place(c.presentPos, c.shape, c.theme) {
 					c.consumed = true
+					if s.arena.CheckErasable() {
+						s.arena.Erase()
+					}
+					// fmt.Println("erasable:", s.arena.CheckErasable())
 				} else {
 					c.presentPos = c.defaultPos
 				}

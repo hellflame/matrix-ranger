@@ -38,6 +38,84 @@ func NewArena(s *styles.Style) *Arena {
 	return &Arena{bricks: bricks, style: s}
 }
 
+func (a *Arena) Erase() {
+	rowIndices := []int{}
+	colIndices := []int{}
+
+	blockCount := a.style.BlockCount
+	for r := 0; r < blockCount; r++ {
+		rowIsFull := true
+		for c := 0; c < blockCount; c++ {
+			if !a.bricks[r][c].solid {
+				rowIsFull = false
+				break
+			}
+		}
+		if rowIsFull {
+			rowIndices = append(rowIndices, r)
+		}
+	}
+
+	for c := 0; c < blockCount; c++ {
+		colIsFull := true
+		for r := 0; r < blockCount; r++ {
+			if !a.bricks[r][c].solid {
+				colIsFull = false
+				break
+			}
+		}
+		if colIsFull {
+			colIndices = append(colIndices, c)
+		}
+	}
+
+	for _, idx := range rowIndices {
+		for c := 0; c < blockCount; c++ {
+			a.bricks[idx][c].solid = false
+			a.bricks[idx][c].style = *a.style.CurrentTheme.Block
+		}
+	}
+
+	for _, idx := range colIndices {
+		for r := 0; r < blockCount; r++ {
+			a.bricks[r][idx].solid = false
+			a.bricks[r][idx].style = *a.style.CurrentTheme.Block
+		}
+	}
+
+}
+
+func (a *Arena) CheckErasable() bool {
+	blockCount := a.style.BlockCount
+	for r := 0; r < blockCount; r++ {
+		rowIsFull := true
+		for c := 0; c < blockCount; c++ {
+			if !a.bricks[r][c].solid {
+				rowIsFull = false
+				break
+			}
+		}
+		if rowIsFull {
+			return true
+		}
+	}
+
+	for c := 0; c < blockCount; c++ {
+		colIsFull := true
+		for r := 0; r < blockCount; r++ {
+			if !a.bricks[r][c].solid {
+				colIsFull = false
+				break
+			}
+		}
+		if colIsFull {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (a *Arena) Place(start f32.Point, shape Shape, theme *styles.Block) bool {
 	blockSize := float32(a.style.BlockSize)
 	blockCount := a.style.BlockCount
