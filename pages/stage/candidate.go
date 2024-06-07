@@ -37,7 +37,7 @@ type candidate struct {
 	presentPos f32.Point
 }
 
-func NewCandidate(shape blocks.Shape, posLeft, posTop int, calm, drag styles.PileStyle, theme *styles.Block) *candidate {
+func NewCandidate(shape blocks.Shape, pos image.Point, calm, drag styles.PileStyle, theme *styles.Block) *candidate {
 	c := &candidate{
 		shape: shape, theme: theme,
 		state: "default",
@@ -49,9 +49,9 @@ func NewCandidate(shape blocks.Shape, posLeft, posTop int, calm, drag styles.Pil
 	c.currentStyle = c.styles[c.state]
 
 	left, top := c.GetInnerOffset()
-	pos := f32.Point{X: float32(posLeft + left), Y: float32(posTop + top)}
-	c.defaultPos = pos
-	c.presentPos = pos
+	p := f32.Point{X: float32(pos.X + left), Y: float32(pos.Y + top)}
+	c.defaultPos = p
+	c.presentPos = p
 	return c
 }
 
@@ -194,7 +194,9 @@ func (cg *candidateGroup) GenerateCandidates() []*candidate {
 
 	for i := 0; i < cg.count; i++ {
 		shapeIdx, shape := cg.shapeGroups.ChooseOneShape(0)
-		result[i] = NewCandidate(shape, i*candidateOffset, offsetTop, cg.calm, cg.drag, theme.Shapes[shapeIdx])
+		result[i] = NewCandidate(shape,
+			image.Point{X: i * candidateOffset, Y: offsetTop},
+			cg.calm, cg.drag, theme.Shapes[shapeIdx])
 	}
 	return result
 }

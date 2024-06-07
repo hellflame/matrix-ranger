@@ -16,8 +16,6 @@ import (
 )
 
 type Stage struct {
-	position f32.Point
-
 	arena *blocks.Arena
 
 	candidates []*candidate
@@ -40,8 +38,7 @@ func NewStage(s *styles.Style, seed int64) *Stage {
 	watcher := new(framework.Watcher)
 	stage := &Stage{
 		style: s, rnd: rnd, arena: arena,
-		watcher:  watcher,
-		position: f32.Point{X: 0., Y: 0.},
+		watcher: watcher,
 
 		candidateGroup: NewCandidateGroup(size, size, 0, 3, s, rnd),
 		shapeGroups:    blocks.NewShapeGroups(rnd),
@@ -91,7 +88,7 @@ func (s *Stage) OnEvent(ev event.Event) {
 			if c.chosen {
 				c.ToggleDrag(true)
 				left, top := c.GetCenterOffset()
-				c.presentPos = f32.Point{X: x.Position.X - float32(left), Y: x.Position.Y - float32(top)}
+				c.presentPos = f32.Point{X: x.Position.X - float32(left+s.style.OffsetLeft), Y: x.Position.Y - float32(top+s.style.OffsetTop)}
 			}
 		}
 	}
@@ -101,7 +98,7 @@ func (s *Stage) Render(ctx *framework.Context) {
 	s.watcher.Trigger(ctx.Event.Source)
 	ops := ctx.Ops
 	w, h := s.GetSize()
-	area := clip.Rect(image.Rect(0, 0, w, h))
+	area := clip.Rect(image.Rect(0, 0, w+s.style.OffsetLeft*2, h+s.style.OffsetTop))
 	defer area.Push(ops).Pop()
 	event.Op(ops, s)
 
@@ -111,7 +108,7 @@ func (s *Stage) Render(ctx *framework.Context) {
 	for _, candidate := range s.candidates {
 		if !candidate.consumed {
 			pos := candidate.presentPos
-			left, top := int(pos.X), int(pos.Y)
+			left, top := int(pos.X)+s.style.OffsetLeft, int(pos.Y)+s.style.OffsetTop
 			offset := op.Offset(image.Pt(left, top)).Push(ops)
 			candidate.Render(ops)
 			offset.Pop()

@@ -169,16 +169,17 @@ func (a *Arena) Render(ops *op.Ops) {
 	blockCount := a.style.BlockCount
 	blockSize := a.style.BlockSize
 	size := blockCount*(space+blockSize) - space
-	area := clip.Rect(image.Rect(0, 0, size, size))
+	area := clip.Rect(image.Rect(0, 0, size+a.style.OffsetLeft, size+a.style.OffsetTop))
 	defer area.Push(ops).Pop()
 	event.Op(ops, a)
+
 	round := a.style.BlockRound
 	bricks := a.bricks
 	for r := 0; r < blockCount; r++ {
-		rowOffset := op.Offset(image.Pt(0, r*(space+blockSize))).Push(ops)
+		rowOffset := op.Offset(image.Pt(0, r*(space+blockSize)+a.style.OffsetTop)).Push(ops)
 		for c := 0; c < blockCount; c++ {
 			brick := bricks[r][c]
-			colOffset := op.Offset(image.Pt(c*(space+blockSize), 0)).Push(ops)
+			colOffset := op.Offset(image.Pt(c*(space+blockSize)+a.style.OffsetLeft, 0)).Push(ops)
 
 			b := clip.RRect{Rect: image.Rect(0, 0, blockSize, blockSize),
 				SE: round, SW: round, NW: round, NE: round}.Push(ops)
