@@ -120,9 +120,17 @@ func (c *candidate) Render(ops *op.Ops) {
 	blockSize := adjust.BlockSize
 	round := adjust.BlockRound
 
-	area := clip.Rect(image.Rect(0, 0, c.GetWidth(), c.GetHeight()))
+	pos := c.presentPos
+	left, top := int(pos.X), int(pos.Y)
+	offset := op.Offset(image.Pt(left-blockSize, top-blockSize)).Push(ops)
+	defer offset.Pop()
+
+	area := clip.Rect(image.Rect(0, 0, c.GetWidth()+blockSize*2, c.GetHeight()+blockSize*2))
+
 	defer area.Push(ops).Pop()
 	event.Op(ops, c)
+
+	defer op.Offset(image.Pt(blockSize, blockSize)).Push(ops).Pop()
 
 	blockColor := c.theme.Color
 	bounds := image.Rect(0, 0, blockSize, blockSize)

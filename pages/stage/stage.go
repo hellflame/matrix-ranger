@@ -108,11 +108,7 @@ func (s *Stage) Render(ctx *framework.Context) {
 	s.GenerateCandidatesIfNeed()
 	for _, candidate := range s.candidates {
 		if !candidate.consumed {
-			pos := candidate.presentPos
-			left, top := int(pos.X), int(pos.Y)
-			offset := op.Offset(image.Pt(left, top)).Push(ops)
 			candidate.Render(ops)
-			offset.Pop()
 		}
 	}
 }

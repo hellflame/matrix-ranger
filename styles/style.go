@@ -23,7 +23,7 @@ type PileStyle struct {
 func CreateStyle(size, count, round, space int) *Style {
 	s := &Style{
 		BlockCount: count,
-		OffsetTop:  size,
+		OffsetTop:  size * 2,
 		OffsetLeft: size,
 		PileStyle: PileStyle{
 			BlockSize:  size,
