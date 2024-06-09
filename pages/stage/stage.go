@@ -80,7 +80,7 @@ func (s *Stage) OnEvent(ev event.Event) {
 				} else {
 					c.presentPos = c.defaultPos
 				}
-				c.chosen = false
+				c.ToggleChosen(false)
 			}
 		}
 	case pointer.Drag:

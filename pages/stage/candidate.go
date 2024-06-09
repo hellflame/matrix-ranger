@@ -28,6 +28,8 @@ type candidate struct {
 	consumed bool
 	chosen   bool
 
+	cache op.CallOp
+
 	state  string
 	styles map[string]styles.PileStyle
 
@@ -52,6 +54,7 @@ func NewCandidate(shape blocks.Shape, pos image.Point, calm, drag styles.PileSty
 	p := f32.Point{X: float32(pos.X + left), Y: float32(pos.Y + top)}
 	c.defaultPos = p
 	c.presentPos = p
+	c.updateCache()
 	return c
 }
 
@@ -62,6 +65,7 @@ func (c *candidate) ToggleDrag(dragging bool) {
 		c.state = "default"
 	}
 	c.currentStyle = c.styles[c.state]
+	c.updateCache()
 }
 
 func (c *candidate) Interest() event.Filter {
@@ -81,9 +85,14 @@ func (c *candidate) OnEvent(ev event.Event) {
 	}
 	switch x.Kind {
 	case pointer.Press:
-		c.chosen = true
+		c.ToggleChosen(true)
 	}
 	println(c.shape.Desc())
+}
+
+func (c *candidate) ToggleChosen(chosen bool) {
+	c.chosen = chosen
+	c.updateCache()
 }
 
 func (c *candidate) GetMaxWidth() int {
@@ -114,15 +123,21 @@ func (c *candidate) GetHeight() int {
 	return len(c.shape)*(space+c.currentStyle.BlockSize) - space
 }
 
-func (c *candidate) Render(ops *op.Ops) {
+func (c *candidate) renderCache(ops *op.Ops) {
+	c.cache.Add(ops)
+}
+
+func (c *candidate) updateCache() {
+	ops := new(op.Ops)
+	macro := op.Record(ops)
+	defer func() {
+		c.cache = macro.Stop()
+	}()
+
 	adjust := c.currentStyle
 	space := adjust.BlockSpace
-	blockSize := adjust.BlockSize
 	round := adjust.BlockRound
-
-	pos := c.presentPos
-	left, top := int(pos.X), int(pos.Y)
-	defer op.Offset(image.Pt(left-blockSize, top-blockSize)).Push(ops).Pop() // outer offset
+	blockSize := adjust.BlockSize
 
 	area := clip.Rect(image.Rect(0, 0, c.GetWidth()+blockSize*2, c.GetHeight()+blockSize*2))
 
@@ -148,6 +163,18 @@ func (c *candidate) Render(ops *op.Ops) {
 		}
 		rowOffset.Pop()
 	}
+}
+
+func (c *candidate) Render(ops *op.Ops) {
+	adjust := c.currentStyle
+
+	blockSize := adjust.BlockSize
+
+	pos := c.presentPos
+	left, top := int(pos.X), int(pos.Y)
+	defer op.Offset(image.Pt(left-blockSize, top-blockSize)).Push(ops).Pop() // outer offset
+
+	c.renderCache(ops)
 }
 
 type candidateGroup struct {
