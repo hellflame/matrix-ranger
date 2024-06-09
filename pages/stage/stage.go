@@ -88,7 +88,7 @@ func (s *Stage) OnEvent(ev event.Event) {
 			if c.chosen {
 				c.ToggleDrag(true)
 				left, top := c.GetCenterOffset()
-				c.presentPos = f32.Point{X: x.Position.X - float32(left+s.style.OffsetLeft), Y: x.Position.Y - float32(top+s.style.OffsetTop)}
+				c.presentPos = f32.Point{X: x.Position.X - float32(left), Y: x.Position.Y - float32(top)}
 			}
 		}
 	}
@@ -98,7 +98,8 @@ func (s *Stage) Render(ctx *framework.Context) {
 	s.watcher.Trigger(ctx.Event.Source)
 	ops := ctx.Ops
 	w, h := s.GetSize()
-	area := clip.Rect(image.Rect(0, 0, w+s.style.OffsetLeft*2, h+s.style.OffsetTop))
+	defer op.Offset(image.Pt(s.style.OffsetLeft, s.style.OffsetTop)).Push(ops).Pop()
+	area := clip.Rect(image.Rect(0, 0, w, h))
 	defer area.Push(ops).Pop()
 	event.Op(ops, s)
 
@@ -108,7 +109,7 @@ func (s *Stage) Render(ctx *framework.Context) {
 	for _, candidate := range s.candidates {
 		if !candidate.consumed {
 			pos := candidate.presentPos
-			left, top := int(pos.X)+s.style.OffsetLeft, int(pos.Y)+s.style.OffsetTop
+			left, top := int(pos.X), int(pos.Y)
 			offset := op.Offset(image.Pt(left, top)).Push(ops)
 			candidate.Render(ops)
 			offset.Pop()
