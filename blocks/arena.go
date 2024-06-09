@@ -16,6 +16,7 @@ type Arena struct {
 	style *styles.Style
 
 	active bool
+	cache  op.CallOp
 
 	bricks [][]brick
 }
@@ -35,10 +36,54 @@ func NewArena(s *styles.Style) *Arena {
 		}
 		bricks[i] = tmp
 	}
-	return &Arena{bricks: bricks, style: s}
+	arena := &Arena{bricks: bricks, style: s}
+	arena.updateCache()
+	return arena
+}
+
+func (a *Arena) renderCache(ops *op.Ops) {
+	a.cache.Add(ops)
+}
+
+func (a *Arena) updateCache() {
+	ops := new(op.Ops)
+	macro := op.Record(ops)
+	defer func() {
+		a.cache = macro.Stop()
+	}()
+
+	space := a.style.BlockSpace
+	blockCount := a.style.BlockCount
+	blockSize := a.style.BlockSize
+	size := blockCount*(space+blockSize) - space
+
+	area := clip.Rect(image.Rect(0, 0, size, size))
+	defer area.Push(ops).Pop()
+	event.Op(ops, a)
+
+	round := a.style.BlockRound
+	bricks := a.bricks
+	for r := 0; r < blockCount; r++ {
+		rowOffset := op.Offset(image.Pt(0, r*(space+blockSize))).Push(ops)
+		for c := 0; c < blockCount; c++ {
+			brick := bricks[r][c]
+			colOffset := op.Offset(image.Pt(c*(space+blockSize), 0)).Push(ops)
+
+			b := clip.RRect{Rect: image.Rect(0, 0, blockSize, blockSize),
+				SE: round, SW: round, NW: round, NE: round}.Push(ops)
+
+			paint.ColorOp{Color: brick.style.Color}.Add(ops)
+			paint.PaintOp{}.Add(ops)
+
+			b.Pop()
+			colOffset.Pop()
+		}
+		rowOffset.Pop()
+	}
 }
 
 func (a *Arena) Erase() {
+	defer a.updateCache()
 	rowIndices := []int{}
 	colIndices := []int{}
 
@@ -117,6 +162,7 @@ func (a *Arena) CheckErasable() bool {
 }
 
 func (a *Arena) Place(start f32.Point, shape Shape, theme *styles.Block) bool {
+	defer a.updateCache()
 	blockSize := float32(a.style.BlockSize)
 	blockCount := a.style.BlockCount
 	colIdx := int(start.X / blockSize)
@@ -165,34 +211,7 @@ func (a *Arena) OnEvent(e event.Event) {
 }
 
 func (a *Arena) Render(ops *op.Ops) {
-	space := a.style.BlockSpace
-	blockCount := a.style.BlockCount
-	blockSize := a.style.BlockSize
-	size := blockCount*(space+blockSize) - space
-
-	area := clip.Rect(image.Rect(0, 0, size, size))
-	defer area.Push(ops).Pop()
-	event.Op(ops, a)
-
-	round := a.style.BlockRound
-	bricks := a.bricks
-	for r := 0; r < blockCount; r++ {
-		rowOffset := op.Offset(image.Pt(0, r*(space+blockSize))).Push(ops)
-		for c := 0; c < blockCount; c++ {
-			brick := bricks[r][c]
-			colOffset := op.Offset(image.Pt(c*(space+blockSize), 0)).Push(ops)
-
-			b := clip.RRect{Rect: image.Rect(0, 0, blockSize, blockSize),
-				SE: round, SW: round, NW: round, NE: round}.Push(ops)
-
-			paint.ColorOp{Color: brick.style.Color}.Add(ops)
-			paint.PaintOp{}.Add(ops)
-
-			b.Pop()
-			colOffset.Pop()
-		}
-		rowOffset.Pop()
-	}
+	a.renderCache(ops)
 }
 
 func (a *Arena) GetAreaSize() int {
