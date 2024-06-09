@@ -122,24 +122,23 @@ func (c *candidate) Render(ops *op.Ops) {
 
 	pos := c.presentPos
 	left, top := int(pos.X), int(pos.Y)
-	offset := op.Offset(image.Pt(left-blockSize, top-blockSize)).Push(ops)
-	defer offset.Pop()
+	defer op.Offset(image.Pt(left-blockSize, top-blockSize)).Push(ops).Pop() // outer offset
 
 	area := clip.Rect(image.Rect(0, 0, c.GetWidth()+blockSize*2, c.GetHeight()+blockSize*2))
 
 	defer area.Push(ops).Pop()
 	event.Op(ops, c)
 
-	defer op.Offset(image.Pt(blockSize, blockSize)).Push(ops).Pop()
+	defer op.Offset(image.Pt(blockSize, blockSize)).Push(ops).Pop() // inner offset
 
 	blockColor := c.theme.Color
 	bounds := image.Rect(0, 0, blockSize, blockSize)
 
 	for r, row := range c.shape {
 		rowOffset := op.Offset(image.Pt(0, r*(space+blockSize))).Push(ops)
-		for c, col := range row {
+		for c, dot := range row {
 			colOffset := op.Offset(image.Pt(c*(space+blockSize), 0)).Push(ops)
-			if col {
+			if dot {
 				b := clip.RRect{Rect: bounds, SE: round, SW: round, NW: round, NE: round}.Push(ops)
 				paint.ColorOp{Color: blockColor}.Add(ops)
 				paint.PaintOp{}.Add(ops)
