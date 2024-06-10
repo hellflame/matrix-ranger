@@ -54,7 +54,7 @@ func (s *Stage) OnCreate() {
 func (s *Stage) Interest() event.Filter {
 	return pointer.Filter{
 		Target: s,
-		Kinds:  pointer.Drag | pointer.Release,
+		Kinds:  pointer.Drag | pointer.Release, // | pointer.Press,
 	}
 }
 
@@ -78,7 +78,7 @@ func (s *Stage) OnEvent(ev event.Event) {
 					}
 					// fmt.Println("erasable:", s.arena.CheckErasable())
 				} else {
-					c.presentPos = c.defaultPos
+					c.UpdatePosition(c.defaultPos)
 				}
 				c.ToggleChosen(false)
 			}
@@ -87,8 +87,9 @@ func (s *Stage) OnEvent(ev event.Event) {
 		for _, c := range s.candidates {
 			if c.chosen {
 				c.ToggleDrag(true)
+				innerOffset := s.style.StageInnerOffset
 				left, top := c.GetCenterOffset()
-				c.presentPos = f32.Point{X: x.Position.X - float32(left), Y: x.Position.Y - float32(top)}
+				c.UpdatePosition(f32.Point{X: x.Position.X - float32(left+innerOffset), Y: x.Position.Y - float32(top+innerOffset)})
 			}
 		}
 	}
@@ -97,11 +98,16 @@ func (s *Stage) OnEvent(ev event.Event) {
 func (s *Stage) Render(ctx *framework.Context) {
 	s.watcher.Trigger(ctx.Event.Source)
 	ops := ctx.Ops
+
+	innerOffset := s.style.StageInnerOffset
+	defer op.Offset(image.Pt(s.style.OffsetLeft-innerOffset, s.style.OffsetTop-innerOffset)).Push(ops).Pop()
+
 	w, h := s.GetSize()
-	defer op.Offset(image.Pt(s.style.OffsetLeft, s.style.OffsetTop)).Push(ops).Pop()
-	area := clip.Rect(image.Rect(0, 0, w, h))
+	area := clip.Rect(image.Rect(0, 0, w+innerOffset*2, h+innerOffset*2))
 	defer area.Push(ops).Pop()
 	event.Op(ops, s)
+
+	defer op.Offset(image.Pt(innerOffset, innerOffset)).Push(ops).Pop()
 
 	s.arena.Render(ops)
 

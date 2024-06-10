@@ -7,7 +7,7 @@ import (
 type Background struct{}
 
 func (b *Background) Render(ctx *framework.Context) {
-	println("background")
+	// println("background")
 }
 
 func (b *Background) OnCreate() {

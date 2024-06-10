@@ -4,6 +4,8 @@ type Style struct {
 	PileStyle
 	BlockCount int
 
+	StageInnerOffset int
+
 	OffsetTop  int
 	OffsetLeft int
 
@@ -22,9 +24,10 @@ type PileStyle struct {
 
 func CreateStyle(size, count, round, space int) *Style {
 	s := &Style{
-		BlockCount: count,
-		OffsetTop:  size * 2,
-		OffsetLeft: size,
+		BlockCount:       count,
+		StageInnerOffset: size,
+		OffsetTop:        size * 2,
+		OffsetLeft:       size,
 		PileStyle: PileStyle{
 			BlockSize:  size,
 			BlockRound: round,

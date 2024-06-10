@@ -74,9 +74,6 @@ func (c *candidate) Interest() event.Filter {
 		Kinds:  pointer.Press,
 	}
 }
-func (c *candidate) UpdatePosition(p f32.Point) {
-	c.presentPos = p
-}
 
 func (c *candidate) OnEvent(ev event.Event) {
 	x, ok := ev.(pointer.Event)
@@ -88,6 +85,10 @@ func (c *candidate) OnEvent(ev event.Event) {
 		c.ToggleChosen(true)
 	}
 	println(c.shape.Desc())
+}
+
+func (c *candidate) UpdatePosition(p f32.Point) {
+	c.presentPos = p
 }
 
 func (c *candidate) ToggleChosen(chosen bool) {
