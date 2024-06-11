@@ -1,7 +1,6 @@
 package stage
 
 import (
-	"fmt"
 	"image"
 	"math/rand"
 
@@ -12,13 +11,14 @@ import (
 	"gioui.org/op/clip"
 	"github.com/hellflame/matrix-ranger/blocks"
 	"github.com/hellflame/matrix-ranger/framework"
+	"github.com/hellflame/matrix-ranger/pages/stage/candidate"
 	"github.com/hellflame/matrix-ranger/styles"
 )
 
 type Stage struct {
 	arena *blocks.Arena
 
-	candidates []*candidate
+	candidates []*candidate.Candidate
 
 	watcher *framework.Watcher
 
@@ -26,9 +26,7 @@ type Stage struct {
 
 	style *styles.Style
 
-	candidateGroup *candidateGroup
-
-	shapeGroups *blocks.ShapeGroups
+	candidateGroup *candidate.CandidateGroup
 }
 
 func NewStage(s *styles.Style, seed int64) *Stage {
@@ -40,8 +38,7 @@ func NewStage(s *styles.Style, seed int64) *Stage {
 		style: s, rnd: rnd, arena: arena,
 		watcher: watcher,
 
-		candidateGroup: NewCandidateGroup(size, size, 0, 3, s, rnd),
-		shapeGroups:    blocks.NewShapeGroups(rnd),
+		candidateGroup: candidate.NewCandidateGroup(size, size, 0, 3, s, rnd),
 	}
 	watcher.Add(stage)
 	stage.GenerateCandidates()
@@ -66,26 +63,26 @@ func (s *Stage) OnEvent(ev event.Event) {
 	switch x.Kind {
 	case pointer.Release:
 		for _, c := range s.candidates {
-			if c.chosen {
+			if c.IsChosen() {
 				c.ToggleDrag(false)
 				// left, top := c.GetCenterOffset()
 				// centerPosition := f32.Point{X: c.presentPos.X + float32(left), Y: c.presentPos.Y + float32(top)}
-				fmt.Println("release pointer pos:", x.Position, "top left pos:", c.presentPos)
-				if s.arena.Place(c.presentPos, c.shape, c.theme) {
-					c.consumed = true
+				// fmt.Println("release pointer pos:", x.Position, "top left pos:", c.presentPos)
+				if s.arena.Place(c.GetStatus()) {
+					c.Consume()
 					if s.arena.CheckErasable() {
 						s.arena.Erase()
 					}
 					// fmt.Println("erasable:", s.arena.CheckErasable())
 				} else {
-					c.UpdatePosition(c.defaultPos)
+					c.BackToDefault()
 				}
 				c.ToggleChosen(false)
 			}
 		}
 	case pointer.Drag:
 		for _, c := range s.candidates {
-			if c.chosen {
+			if c.IsChosen() {
 				c.ToggleDrag(true)
 				innerOffset := s.style.StageInnerOffset
 				left, top := c.GetCenterOffset()
@@ -113,8 +110,8 @@ func (s *Stage) Render(ctx *framework.Context) {
 
 	s.GenerateCandidatesIfNeed()
 	for _, candidate := range s.candidates {
-		if !candidate.consumed {
-			candidate.Render(ops)
+		if !candidate.IsConsumed() {
+			candidate.Render(ctx)
 		}
 	}
 }
@@ -132,7 +129,7 @@ func (s *Stage) GenerateCandidates() {
 func (s *Stage) GenerateCandidatesIfNeed() {
 	allConsumed := true
 	for _, c := range s.candidates {
-		if !c.consumed {
+		if !c.IsConsumed() {
 			allConsumed = false
 			break
 		}
@@ -144,5 +141,5 @@ func (s *Stage) GenerateCandidatesIfNeed() {
 
 func (s *Stage) GetSize() (w, h int) {
 	areaSize := s.arena.GetAreaSize()
-	return areaSize, areaSize + s.candidateGroup.gap + s.candidateGroup.width
+	return areaSize, areaSize + s.candidateGroup.GetOffset()
 }

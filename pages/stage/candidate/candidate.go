@@ -1,4 +1,4 @@
-package stage
+package candidate
 
 import (
 	"image"
@@ -11,6 +11,7 @@ import (
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"github.com/hellflame/matrix-ranger/blocks"
+	"github.com/hellflame/matrix-ranger/framework"
 	"github.com/hellflame/matrix-ranger/styles"
 )
 
@@ -21,7 +22,7 @@ import (
 // 	dragging
 // )
 
-type candidate struct {
+type Candidate struct {
 	shape blocks.Shape
 	theme *styles.Block
 
@@ -39,8 +40,8 @@ type candidate struct {
 	presentPos f32.Point
 }
 
-func NewCandidate(shape blocks.Shape, pos image.Point, calm, drag styles.PileStyle, theme *styles.Block) *candidate {
-	c := &candidate{
+func NewCandidate(shape blocks.Shape, pos image.Point, calm, drag styles.PileStyle, theme *styles.Block) *Candidate {
+	c := &Candidate{
 		shape: shape, theme: theme,
 		state: "default",
 		styles: map[string]styles.PileStyle{
@@ -58,7 +59,23 @@ func NewCandidate(shape blocks.Shape, pos image.Point, calm, drag styles.PileSty
 	return c
 }
 
-func (c *candidate) ToggleDrag(dragging bool) {
+func (c *Candidate) GetStatus() (f32.Point, blocks.Shape, *styles.Block) {
+	return c.presentPos, c.shape, c.theme
+}
+
+func (c *Candidate) IsConsumed() bool {
+	return c.consumed
+}
+
+func (c *Candidate) Consume() {
+	c.consumed = true
+}
+
+func (c *Candidate) IsChosen() bool {
+	return c.chosen
+}
+
+func (c *Candidate) ToggleDrag(dragging bool) {
 	if dragging {
 		c.state = "dragging"
 	} else {
@@ -68,14 +85,14 @@ func (c *candidate) ToggleDrag(dragging bool) {
 	c.updateCache()
 }
 
-func (c *candidate) Interest() event.Filter {
+func (c *Candidate) Interest() event.Filter {
 	return pointer.Filter{
 		Target: c,
 		Kinds:  pointer.Press,
 	}
 }
 
-func (c *candidate) OnEvent(ev event.Event) {
+func (c *Candidate) OnEvent(ev event.Event) {
 	x, ok := ev.(pointer.Event)
 	if !ok {
 		return
@@ -87,20 +104,24 @@ func (c *candidate) OnEvent(ev event.Event) {
 	println(c.shape.Desc())
 }
 
-func (c *candidate) UpdatePosition(p f32.Point) {
+func (c *Candidate) UpdatePosition(p f32.Point) {
 	c.presentPos = p
 }
 
-func (c *candidate) ToggleChosen(chosen bool) {
+func (c *Candidate) BackToDefault() {
+	c.presentPos = c.defaultPos
+}
+
+func (c *Candidate) ToggleChosen(chosen bool) {
 	c.chosen = chosen
 	c.updateCache()
 }
 
-func (c *candidate) GetMaxWidth() int {
+func (c *Candidate) GetMaxWidth() int {
 	return c.currentStyle.BlockSize*5 + 4*c.currentStyle.BlockSpace
 }
 
-func (c *candidate) GetInnerOffset() (int, int) {
+func (c *Candidate) GetInnerOffset() (int, int) {
 	maxWidth := c.GetMaxWidth()
 	leftOffset := (maxWidth - c.GetWidth()) / 2
 	topOffset := (maxWidth - c.GetHeight()) / 2
@@ -108,27 +129,27 @@ func (c *candidate) GetInnerOffset() (int, int) {
 }
 
 // offset to top-left corner point
-func (c *candidate) GetCenterOffset() (int, int) {
+func (c *Candidate) GetCenterOffset() (int, int) {
 	leftOffset := c.GetWidth() / 2
 	topOffset := c.GetHeight() / 2
 	return leftOffset, topOffset
 }
 
-func (c *candidate) GetWidth() int {
+func (c *Candidate) GetWidth() int {
 	space := c.currentStyle.BlockSpace
 	return len(c.shape[0])*(space+c.currentStyle.BlockSize) - space
 }
 
-func (c *candidate) GetHeight() int {
+func (c *Candidate) GetHeight() int {
 	space := c.currentStyle.BlockSpace
 	return len(c.shape)*(space+c.currentStyle.BlockSize) - space
 }
 
-func (c *candidate) renderCache(ops *op.Ops) {
+func (c *Candidate) renderCache(ops *op.Ops) {
 	c.cache.Add(ops)
 }
 
-func (c *candidate) updateCache() {
+func (c *Candidate) updateCache() {
 	ops := new(op.Ops)
 	macro := op.Record(ops)
 	defer func() {
@@ -166,7 +187,8 @@ func (c *candidate) updateCache() {
 	}
 }
 
-func (c *candidate) Render(ops *op.Ops) {
+func (c *Candidate) Render(ctx *framework.Context) {
+	ops := ctx.Ops
 	adjust := c.currentStyle
 
 	blockSize := adjust.BlockSize
@@ -178,7 +200,7 @@ func (c *candidate) Render(ops *op.Ops) {
 	c.renderCache(ops)
 }
 
-type candidateGroup struct {
+type CandidateGroup struct {
 	style *styles.Style
 	calm  styles.PileStyle
 	drag  styles.PileStyle
@@ -193,13 +215,13 @@ type candidateGroup struct {
 	shapeGroups *blocks.ShapeGroups
 }
 
-func NewCandidateGroup(maxWidth, offsetTop, level, count int, style *styles.Style, rnd *rand.Rand) *candidateGroup {
+func NewCandidateGroup(maxWidth, offsetTop, level, count int, style *styles.Style, rnd *rand.Rand) *CandidateGroup {
 	minGap := style.BlockSize / 2
 
 	candidateWidth := (maxWidth - 2*minGap) / 3
 	candidateSize := (candidateWidth - 4*style.BlockSpace) / 5
 
-	return &candidateGroup{
+	return &CandidateGroup{
 		// style: style,
 		width: candidateWidth,
 		gap:   minGap, level: level,
@@ -220,10 +242,14 @@ func NewCandidateGroup(maxWidth, offsetTop, level, count int, style *styles.Styl
 	}
 }
 
-func (cg *candidateGroup) GenerateCandidates() []*candidate {
-	result := make([]*candidate, cg.count)
+func (cg *CandidateGroup) GetOffset() int {
+	return cg.width + cg.gap
+}
 
-	candidateOffset := cg.width + cg.gap
+func (cg *CandidateGroup) GenerateCandidates() []*Candidate {
+	result := make([]*Candidate, cg.count)
+
+	candidateOffset := cg.GetOffset()
 	offsetTop := cg.offsetTop + cg.style.BlockSize/3
 	theme := cg.style.CurrentTheme
 
