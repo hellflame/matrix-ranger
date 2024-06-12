@@ -6,7 +6,6 @@ import (
 
 	"gioui.org/app"
 	"gioui.org/op"
-	"gioui.org/unit"
 	"github.com/hellflame/matrix-ranger/framework"
 	"github.com/hellflame/matrix-ranger/pages"
 	"github.com/hellflame/matrix-ranger/pages/stage"
@@ -18,9 +17,9 @@ func main() {
 		window := new(app.Window)
 
 		window.Option(
-			app.MaxSize(unit.Dp(500), unit.Dp(580)),
-			app.MinSize(unit.Dp(500), unit.Dp(580)),
-			app.Size(unit.Dp(500), unit.Dp(580)),
+			// app.MaxSize(unit.Dp(500), unit.Dp(580)),
+			// app.MinSize(unit.Dp(500), unit.Dp(580)),
+			// app.Size(unit.Dp(500), unit.Dp(580)),
 			app.Title("matrix ranger"))
 		err := run(window)
 		if err != nil {

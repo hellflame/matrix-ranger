@@ -73,7 +73,10 @@ func (s *Stage) OnEvent(ev event.Event) {
 					if s.arena.CheckErasable() {
 						s.arena.Erase()
 					}
-					// fmt.Println("erasable:", s.arena.CheckErasable())
+					if !s.checkAnyPlaceable() {
+						println("game over")
+						s.reset()
+					}
 				} else {
 					c.BackToDefault()
 				}
@@ -92,6 +95,33 @@ func (s *Stage) OnEvent(ev event.Event) {
 	}
 }
 
+func (s *Stage) checkAnyPlaceable() bool {
+	placeable := false
+	hasCandidate := false
+	for _, c := range s.candidates {
+		if !c.IsConsumed() {
+			hasCandidate = true
+			if r, col, ok := s.arena.FindPlace(c.GetShape()); ok {
+				placeable = true
+				println("find place", r, col)
+				println(c.GetShape().Desc())
+			}
+		}
+	}
+	if hasCandidate {
+		return placeable
+	}
+	return true
+}
+
+func (s *Stage) reset() {
+	println("reset")
+	s.arena.Reset()
+	for _, c := range s.candidates {
+		c.Consume()
+	}
+}
+
 func (s *Stage) Render(ctx *framework.Context) {
 	s.watcher.Trigger(ctx.Event.Source)
 	ops := ctx.Ops
@@ -106,14 +136,15 @@ func (s *Stage) Render(ctx *framework.Context) {
 
 	defer op.Offset(image.Pt(innerOffset, innerOffset)).Push(ops).Pop()
 
+	s.GenerateCandidatesIfNeed()
 	s.arena.Render(ops)
 
-	s.GenerateCandidatesIfNeed()
 	for _, candidate := range s.candidates {
 		if !candidate.IsConsumed() {
 			candidate.Render(ctx)
 		}
 	}
+	println("after stage render")
 }
 
 func (s *Stage) GenerateCandidates() {
@@ -123,6 +154,11 @@ func (s *Stage) GenerateCandidates() {
 	s.candidates = s.candidateGroup.GenerateCandidates()
 	for _, c := range s.candidates {
 		s.watcher.Add(c)
+	}
+
+	if !s.checkAnyPlaceable() {
+		println("game over after generation")
+		s.reset()
 	}
 }
 

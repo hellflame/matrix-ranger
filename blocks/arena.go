@@ -41,6 +41,18 @@ func NewArena(s *styles.Style) *Arena {
 	return arena
 }
 
+func (a *Arena) Reset() {
+	blockCount := a.style.BlockCount
+	for r := 0; r < blockCount; r++ {
+		for c := 0; c < blockCount; c++ {
+			if a.bricks[r][c].solid {
+				a.bricks[r][c].solid = false
+				a.bricks[r][c].style = *a.style.CurrentTheme.Block
+			}
+		}
+	}
+}
+
 func (a *Arena) renderCache(ops *op.Ops) {
 	a.cache.Add(ops)
 }
@@ -161,6 +173,38 @@ func (a *Arena) CheckErasable() bool {
 	return false
 }
 
+func (a *Arena) HasPlace(rowIdx, colIdx int, shape Shape) bool {
+	blockCount := a.style.BlockCount
+	shapeRows := len(shape)
+	shapeCols := len(shape[0])
+
+	if colIdx > blockCount || colIdx+shapeCols > blockCount ||
+		rowIdx > blockCount || rowIdx+shapeRows > blockCount {
+		return false
+	}
+
+	for r, shapeR := rowIdx, 0; r < blockCount && shapeR < shapeRows; r, shapeR = r+1, shapeR+1 {
+		for c, shapeC := colIdx, 0; c < blockCount && shapeC < shapeCols; c, shapeC = c+1, shapeC+1 {
+			if a.bricks[r][c].solid && shape[shapeR][shapeC] {
+				return false
+			}
+		}
+	}
+	return true
+}
+
+func (a *Arena) FindPlace(shape Shape) (int, int, bool) {
+	blockCount := a.style.BlockCount
+	for r := 0; r < blockCount; r++ {
+		for c := 0; c < blockCount; c++ {
+			if !a.bricks[r][c].solid && a.HasPlace(r, c, shape) {
+				return r, c, true
+			}
+		}
+	}
+	return 0, 0, false
+}
+
 func (a *Arena) Place(start f32.Point, shape Shape, theme *styles.Block) bool {
 	defer a.updateCache()
 	blockSize := float32(a.style.BlockSize)
@@ -169,16 +213,9 @@ func (a *Arena) Place(start f32.Point, shape Shape, theme *styles.Block) bool {
 	rowIdx := int(start.Y / blockSize)
 	shapeRows := len(shape)
 	shapeCols := len(shape[0])
-	if colIdx > blockCount || colIdx+shapeCols > blockCount ||
-		rowIdx > blockCount || rowIdx+shapeRows > blockCount {
+
+	if !a.HasPlace(rowIdx, colIdx, shape) {
 		return false
-	}
-	for r, shapeR := rowIdx, 0; r < blockCount && shapeR < shapeRows; r, shapeR = r+1, shapeR+1 {
-		for c, shapeC := colIdx, 0; c < blockCount && shapeC < shapeCols; c, shapeC = c+1, shapeC+1 {
-			if a.bricks[r][c].solid && shape[shapeR][shapeC] {
-				return false
-			}
-		}
 	}
 
 	for r, shapeR := rowIdx, 0; r < blockCount && shapeR < shapeRows; r, shapeR = r+1, shapeR+1 {

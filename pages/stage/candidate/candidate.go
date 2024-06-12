@@ -63,6 +63,10 @@ func (c *Candidate) GetStatus() (f32.Point, blocks.Shape, *styles.Block) {
 	return c.presentPos, c.shape, c.theme
 }
 
+func (c *Candidate) GetShape() blocks.Shape {
+	return c.shape
+}
+
 func (c *Candidate) IsConsumed() bool {
 	return c.consumed
 }
@@ -254,7 +258,7 @@ func (cg *CandidateGroup) GenerateCandidates() []*Candidate {
 	theme := cg.style.CurrentTheme
 
 	for i := 0; i < cg.count; i++ {
-		shapeIdx, shape := cg.shapeGroups.ChooseOneShape(0)
+		shapeIdx, shape := cg.shapeGroups.ChooseOneShape(1)
 		result[i] = NewCandidate(shape,
 			image.Point{X: i * candidateOffset, Y: offsetTop},
 			cg.calm, cg.drag, theme.Shapes[shapeIdx])
