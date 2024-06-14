@@ -253,5 +253,6 @@ func (a *Arena) Render(ctx *framework.Context) {
 }
 
 func (a *Arena) GetAreaSize() int {
+	println("arena block size", a.style.BlockSize)
 	return (a.style.BlockSize+a.style.BlockSpace)*a.style.BlockCount - a.style.BlockSpace
 }

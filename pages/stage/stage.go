@@ -1,6 +1,7 @@
 package stage
 
 import (
+	"fmt"
 	"image"
 	"math/rand"
 
@@ -31,23 +32,25 @@ type Stage struct {
 
 func NewStage(s *styles.Style, seed int64) *Stage {
 	rnd := rand.New(rand.NewSource(seed))
-	arena := blocks.NewArena(s)
-	size := arena.GetAreaSize()
+
 	watcher := new(framework.Watcher)
 	stage := &Stage{
-		style: s, rnd: rnd, arena: arena,
+		style: s, rnd: rnd,
 		watcher: watcher,
-
-		candidateGroup: candidate.NewCandidateGroup(size, size, 0, 3, s, rnd),
 	}
 	watcher.Add(stage)
-	stage.GenerateCandidates()
 	return stage
 }
 
 func (s *Stage) OnCreate(ctx *framework.Context) {
 	println("px per dp", ctx.Event.Metric.PxPerDp)
-	s.style.BlockSize = int(float32(s.style.BlockSize) * (ctx.Event.Metric.PxPerDp / 2))
+	// s.style.BlockSize = int(float32(s.style.BlockSize) * (ctx.Event.Metric.PxPerDp / 4))
+	println("block size", s.style.BlockSize)
+	s.arena = blocks.NewArena(s.style)
+
+	size := s.arena.GetAreaSize()
+	s.candidateGroup = candidate.NewCandidateGroup(size, size, 0, 3, s.style, s.rnd)
+	s.GenerateCandidates()
 }
 
 func (s *Stage) Interest() event.Filter {
@@ -70,6 +73,8 @@ func (s *Stage) OnEvent(ev event.Event) {
 				// left, top := c.GetCenterOffset()
 				// centerPosition := f32.Point{X: c.presentPos.X + float32(left), Y: c.presentPos.Y + float32(top)}
 				// fmt.Println("release pointer pos:", x.Position, "top left pos:", c.presentPos)
+				p, _, _ := c.GetStatus()
+				fmt.Println("release point", p)
 				if s.arena.Place(c.GetStatus()) {
 					c.Consume()
 					if s.arena.CheckErasable() {
