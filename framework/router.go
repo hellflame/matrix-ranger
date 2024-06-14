@@ -32,7 +32,7 @@ func (r *route) Add(name string, p Page) *route {
 
 func (r *route) Render(ctx *Context) {
 	if !r.created {
-		r.page.OnCreate()
+		r.page.OnCreate(ctx)
 		r.created = true
 	}
 	r.page.Render(ctx)

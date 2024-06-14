@@ -1,6 +1,6 @@
 package framework
 
 type Page interface {
-	OnCreate()
+	OnCreate(ctx *Context)
 	Render(ctx *Context)
 }

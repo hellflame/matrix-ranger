@@ -10,6 +10,6 @@ func (b *Background) Render(ctx *framework.Context) {
 	// println("background")
 }
 
-func (b *Background) OnCreate() {
+func (b *Background) OnCreate(ctx *framework.Context) {
 
 }

@@ -9,6 +9,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
+	"github.com/hellflame/matrix-ranger/framework"
 	"github.com/hellflame/matrix-ranger/styles"
 )
 
@@ -247,8 +248,8 @@ func (a *Arena) OnEvent(e event.Event) {
 	}
 }
 
-func (a *Arena) Render(ops *op.Ops) {
-	a.renderCache(ops)
+func (a *Arena) Render(ctx *framework.Context) {
+	a.renderCache(ctx.Ops)
 }
 
 func (a *Arena) GetAreaSize() int {

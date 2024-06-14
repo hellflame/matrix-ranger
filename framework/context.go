@@ -26,7 +26,7 @@ func NewContext(ops *op.Ops, r *Router) *Context {
 	}
 }
 
-func (c *Context) Refresh(e *app.FrameEvent) {
+func (c *Context) NewFrame(e *app.FrameEvent) {
 	c.Ops.Reset()
 	c.Event = e
 
@@ -35,8 +35,12 @@ func (c *Context) Refresh(e *app.FrameEvent) {
 	c.lastT = present
 }
 
+func (c *Context) Refresh() {
+	c.Event.Source.Execute(op.InvalidateCmd{})
+}
+
 func (c *Context) RouteTo(target string) {
 	if c.R.To(target) {
-		c.Event.Source.Execute(op.InvalidateCmd{})
+		c.Refresh()
 	}
 }

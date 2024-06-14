@@ -54,8 +54,7 @@ func run(window *app.Window) error {
 		case app.DestroyEvent:
 			return e.Err
 		case app.FrameEvent:
-			ctx.Refresh(&e)
-			println("px per dp", e.Metric.PxPerDp)
+			ctx.NewFrame(&e)
 			router.Render(ctx)
 
 			e.Frame(ops)

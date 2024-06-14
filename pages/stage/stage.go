@@ -45,7 +45,9 @@ func NewStage(s *styles.Style, seed int64) *Stage {
 	return stage
 }
 
-func (s *Stage) OnCreate() {
+func (s *Stage) OnCreate(ctx *framework.Context) {
+	println("px per dp", ctx.Event.Metric.PxPerDp)
+	s.style.BlockSize = int(float32(s.style.BlockSize) * (ctx.Event.Metric.PxPerDp / 2))
 }
 
 func (s *Stage) Interest() event.Filter {
@@ -137,7 +139,7 @@ func (s *Stage) Render(ctx *framework.Context) {
 	defer op.Offset(image.Pt(innerOffset, innerOffset)).Push(ops).Pop()
 
 	s.GenerateCandidatesIfNeed()
-	s.arena.Render(ops)
+	s.arena.Render(ctx)
 
 	for _, candidate := range s.candidates {
 		if !candidate.IsConsumed() {
