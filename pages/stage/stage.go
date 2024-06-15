@@ -43,9 +43,9 @@ func NewStage(s *styles.Style, seed int64) *Stage {
 }
 
 func (s *Stage) OnCreate(ctx *framework.Context) {
-	println("px per dp", ctx.Event.Metric.PxPerDp)
-	// s.style.BlockSize = int(float32(s.style.BlockSize) * (ctx.Event.Metric.PxPerDp / 4))
-	println("block size", s.style.BlockSize)
+	// println("px per dp", ctx.Event.Metric.PxPerDp)
+	s.style.BlockSize = int(float32(s.style.BlockSize) * (ctx.Event.Metric.PxPerDp / 2))
+	// println("block size", s.style.BlockSize)
 	s.arena = blocks.NewArena(s.style)
 
 	size := s.arena.GetAreaSize()

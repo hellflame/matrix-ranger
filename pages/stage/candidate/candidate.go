@@ -31,8 +31,8 @@ type Candidate struct {
 
 	cache op.CallOp
 
-	state  string
-	styles map[string]styles.PileStyle
+	state  State
+	styles map[State]styles.PileStyle
 
 	currentStyle styles.PileStyle
 
@@ -43,10 +43,10 @@ type Candidate struct {
 func NewCandidate(shape blocks.Shape, pos image.Point, calm, drag styles.PileStyle, theme *styles.Block) *Candidate {
 	c := &Candidate{
 		shape: shape, theme: theme,
-		state: "default",
-		styles: map[string]styles.PileStyle{
-			"default":  calm,
-			"dragging": drag,
+		state: stable,
+		styles: map[State]styles.PileStyle{
+			stable:   calm,
+			dragging: drag,
 		},
 	}
 	c.currentStyle = c.styles[c.state]
@@ -79,11 +79,11 @@ func (c *Candidate) IsChosen() bool {
 	return c.chosen
 }
 
-func (c *Candidate) ToggleDrag(dragging bool) {
-	if dragging {
-		c.state = "dragging"
+func (c *Candidate) ToggleDrag(drag bool) {
+	if drag {
+		c.state = dragging
 	} else {
-		c.state = "default"
+		c.state = stable
 	}
 	c.currentStyle = c.styles[c.state]
 	c.updateCache()
@@ -258,7 +258,7 @@ func (cg *CandidateGroup) GenerateCandidates() []*Candidate {
 	theme := cg.style.CurrentTheme
 
 	for i := 0; i < cg.count; i++ {
-		shapeIdx, shape := cg.shapeGroups.ChooseOneShape(1)
+		shapeIdx, shape := cg.shapeGroups.ChooseOneShape(-1)
 		result[i] = NewCandidate(shape,
 			image.Point{X: i * candidateOffset, Y: offsetTop},
 			cg.calm, cg.drag, theme.Shapes[shapeIdx])

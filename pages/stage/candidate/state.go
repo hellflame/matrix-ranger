@@ -4,6 +4,8 @@ type State int
 
 const (
 	stable State = iota
+	movingToCursor
 	dragging
+	backToNest
 	consumed
 )
