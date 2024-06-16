@@ -258,7 +258,7 @@ func (cg *CandidateGroup) GenerateCandidates() []*Candidate {
 	theme := cg.style.CurrentTheme
 
 	for i := 0; i < cg.count; i++ {
-		shapeIdx, shape := cg.shapeGroups.ChooseOneShape(-1)
+		shapeIdx, shape := cg.shapeGroups.ChooseOneShape(0.3)
 		result[i] = NewCandidate(shape,
 			image.Point{X: i * candidateOffset, Y: offsetTop},
 			cg.calm, cg.drag, theme.Shapes[shapeIdx])

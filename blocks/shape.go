@@ -3,6 +3,7 @@ package blocks
 import (
 	"math"
 	"math/rand"
+	"sort"
 	"strings"
 )
 
@@ -68,7 +69,7 @@ func (s Shape) GenerateRotateGroup(rotates int) []Shape {
 type ShapeGroups struct {
 	rnd *rand.Rand
 
-	maxLevel int
+	levels   []int
 	groupMap map[int][]*ShapeGroup
 }
 
@@ -102,11 +103,11 @@ func NewShapeGroups(rnd *rand.Rand) *ShapeGroups {
 		// *
 		// * *
 		// * * *
-		NewShapeGroup(Shape{{true, false, false}, {true, true, false}, {true, true, true}}, 4, 6),
+		NewShapeGroup(Shape{{true, false, false}, {true, true, false}, {true, true, true}}, 4, 10),
 		//   *
 		// * * *
 		//   *
-		NewShapeGroup(Shape{{false, true, false}, {true, true, true}, {false, true, false}}, 1, 7),
+		NewShapeGroup(Shape{{false, true, false}, {true, true, true}, {false, true, false}}, 1, 13),
 	}
 	maxLevel := 1
 	groupMap := make(map[int][]*ShapeGroup)
@@ -118,30 +119,51 @@ func NewShapeGroups(rnd *rand.Rand) *ShapeGroups {
 			maxLevel = g.Level
 		}
 	}
+	levels := []int{}
+	for g := range groupMap {
+		levels = append(levels, g)
+	}
+	sort.Slice(levels, func(i, j int) bool {
+		return levels[i] < levels[j]
+	})
 	return &ShapeGroups{
-		rnd: rnd, maxLevel: maxLevel, groupMap: groupMap,
+		rnd: rnd, levels: levels, groupMap: groupMap,
 	}
 }
 
-// hardness: 0 => Normal
-// hardness: -1 => Easy
-// hardness: 1 => Hard
-func (sg *ShapeGroups) ChooseOneShape(hardness int) (int, Shape) {
+// x ^ (1 / hardness)
+func (sg *ShapeGroups) ChooseOneShape(hardness float64) (int, Shape) {
 	rnd := sg.rnd.Float64()
 
-	switch hardness {
-	case 1:
-		// rnd ^ 0.5
-		rnd = math.Sqrt(rnd)
-	case -1:
-		// rnd ^ 2
-		rnd = rnd * rnd
-	}
-	// [1, maxLevel)
-	level := int(math.Round(rnd*float64(sg.maxLevel-1) + 1))
+	rnd = math.Pow(rnd, 1/hardness)
+
+	// switch hardness {
+	// case 1:
+	// 	// rnd ^ 0.5
+	// 	rnd = math.Sqrt(rnd)
+	// case -1:
+	// 	// rnd ^ 2
+	// 	rnd = rnd * rnd
+	// }
+
+	maxLevel := sg.levels[len(sg.levels)-1]
+	levelBorder := math.Round(rnd*float64(maxLevel) + 1) // [1, maxLevel+1)
+	level := sg.chooseLevel(levelBorder)
 	target := sg.groupMap[level]
 	group := target[sg.rnd.Intn(len(target))]
 	shapes := group.Shapes
 
 	return group.Idx, shapes[sg.rnd.Intn(len(shapes))]
+}
+
+func (sg *ShapeGroups) chooseLevel(border float64) int {
+	for i, l := range sg.levels {
+		if float64(l) > border {
+			return sg.levels[i-1]
+		}
+		if float64(l) == border {
+			return l
+		}
+	}
+	return sg.levels[len(sg.levels)-1]
 }
