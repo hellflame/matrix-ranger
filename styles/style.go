@@ -9,9 +9,9 @@ type Style struct {
 	OffsetTop  int
 	OffsetLeft int
 
-	MaxLevel int
-
 	CurrentTheme *Theme
+
+	Animation *Animation
 
 	themes map[string]*Theme
 }
@@ -35,6 +35,10 @@ func CreateStyle(size, count, round, space int) *Style {
 		},
 
 		themes: make(map[string]*Theme),
+
+		Animation: &Animation{
+			Duration: 1000,
+		},
 	}
 	s.themes["default"] = loadDefaultTheme()
 

@@ -6,6 +6,5 @@ const (
 	stable State = iota
 	movingToCursor
 	dragging
-	backToNest
 	consumed
 )

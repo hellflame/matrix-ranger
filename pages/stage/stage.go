@@ -151,7 +151,6 @@ func (s *Stage) Render(ctx *framework.Context) {
 			candidate.Render(ctx)
 		}
 	}
-	println("after stage render")
 }
 
 func (s *Stage) GenerateCandidates() {

@@ -3,6 +3,7 @@ package candidate
 import (
 	"image"
 	"math/rand"
+	"time"
 
 	"gioui.org/f32"
 	"gioui.org/io/event"
@@ -36,8 +37,9 @@ type Candidate struct {
 
 	currentStyle styles.PileStyle
 
-	defaultPos f32.Point
-	presentPos f32.Point
+	defaultPos  f32.Point
+	presentPos  f32.Point
+	transitions []styles.Transition
 }
 
 func NewCandidate(shape blocks.Shape, pos image.Point, calm, drag styles.PileStyle, theme *styles.Block) *Candidate {
@@ -57,6 +59,43 @@ func NewCandidate(shape blocks.Shape, pos image.Point, calm, drag styles.PileSty
 	c.presentPos = p
 	c.updateCache()
 	return c
+}
+
+func (c *Candidate) ToPos(p f32.Point) {
+	c.state = movingToCursor
+
+	startPos := c.presentPos
+	start := time.Now()
+	duration := float32(300.)
+	vx := (p.X - startPos.X) / duration
+	vy := (p.Y - startPos.Y) / duration
+	c.transitions = append(c.transitions, func() bool {
+		elapsed := float32(time.Since(start).Milliseconds())
+		if elapsed > duration {
+			return false
+		}
+		c.presentPos.X = startPos.X + vx*elapsed
+		c.presentPos.Y = startPos.Y + vy*elapsed
+		return true
+	})
+
+	// targetStyle := c.styles[dragging]
+	// startStyle := c.styles[stable]
+	// d := float32(100.)
+	// vr := float32(targetStyle.BlockRound-startStyle.BlockRound) / d
+	// vs := float32(targetStyle.BlockSpace-startStyle.BlockSpace) / d
+	// vsize := float32(targetStyle.BlockSize-startStyle.BlockSize) / d
+	// c.transitions = append(c.transitions, func() bool {
+	// 	elapsed := float32(time.Since(start).Milliseconds())
+	// 	if elapsed > d {
+	// 		return false
+	// 	}
+	// 	c.currentStyle.BlockRound = int(float32(startStyle.BlockRound) + vr*elapsed)
+	// 	c.currentStyle.BlockSpace = int(float32(startStyle.BlockSpace) + vs*elapsed)
+	// 	c.currentStyle.BlockSize = int(float32(startStyle.BlockSize) + vsize*elapsed)
+	// 	c.updateCache()
+	// 	return true
+	// })
 }
 
 func (c *Candidate) GetStatus() (f32.Point, blocks.Shape, *styles.Block) {
@@ -104,6 +143,13 @@ func (c *Candidate) OnEvent(ev event.Event) {
 	switch x.Kind {
 	case pointer.Press:
 		c.ToggleChosen(true)
+		// ox, oy := c.GetInnerOffset()
+		adjust := c.currentStyle
+
+		blockSize := adjust.BlockSize
+		cx, cy := c.GetCenterOffset()
+		c.ToPos(f32.Point{X: c.presentPos.X + x.Position.X - float32(cx) - float32(blockSize),
+			Y: c.presentPos.Y + x.Position.Y - float32(cy) - float32(blockSize)})
 	}
 	println(c.shape.Desc())
 }
@@ -113,7 +159,8 @@ func (c *Candidate) UpdatePosition(p f32.Point) {
 }
 
 func (c *Candidate) BackToDefault() {
-	c.presentPos = c.defaultPos
+	// c.presentPos = c.defaultPos
+	c.ToPos(c.defaultPos)
 }
 
 func (c *Candidate) ToggleChosen(chosen bool) {
@@ -200,6 +247,28 @@ func (c *Candidate) Render(ctx *framework.Context) {
 	pos := c.presentPos
 	left, top := int(pos.X), int(pos.Y)
 	defer op.Offset(image.Pt(left-blockSize, top-blockSize)).Push(ops).Pop() // outer offset
+
+	// switch c.state {
+	// case movingToCursor:
+	// 	// ctx.DeltaT
+
+	// }
+	transformed := false
+	finished := []int{}
+	for idx, trans := range c.transitions {
+		if trans() {
+			transformed = true
+		} else {
+			finished = append(finished, idx)
+		}
+	}
+	for i := len(finished) - 1; i >= 0; i-- {
+		c.transitions = append(c.transitions[:finished[i]], c.transitions[finished[i]+1:]...)
+	}
+	if transformed {
+		println("refreshing")
+		ctx.Refresh()
+	}
 
 	c.renderCache(ops)
 }
