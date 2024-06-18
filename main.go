@@ -6,22 +6,28 @@ import (
 
 	"gioui.org/app"
 	"gioui.org/op"
+	"gioui.org/unit"
 	"github.com/hellflame/matrix-ranger/framework"
 	"github.com/hellflame/matrix-ranger/pages"
 	"github.com/hellflame/matrix-ranger/pages/stage"
 	"github.com/hellflame/matrix-ranger/styles"
+	"github.com/hellflame/matrix-ranger/utils"
 )
 
 func main() {
+	cfg := utils.Parse()
+	if cfg == nil {
+		return
+	}
 	go func() {
 		window := new(app.Window)
 
 		window.Option(
-			// app.MaxSize(unit.Dp(500), unit.Dp(580)),
-			// app.MinSize(unit.Dp(500), unit.Dp(580)),
-			// app.Size(unit.Dp(500), unit.Dp(580)),
+			app.MaxSize(unit.Dp(cfg.Width), unit.Dp(cfg.Height)),
+			app.MinSize(unit.Dp(cfg.Width), unit.Dp(cfg.Height)),
+			app.Size(unit.Dp(cfg.Width), unit.Dp(cfg.Height)),
 			app.Title("matrix ranger"))
-		err := run(window)
+		err := run(window, cfg.BlockSize, cfg.Seed)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -30,9 +36,9 @@ func main() {
 	app.Main()
 }
 
-func run(window *app.Window) error {
+func run(window *app.Window, blockSize, seed int) error {
 	ops := new(op.Ops)
-	style := styles.CreateStyle(70, 10, 5, 5)
+	style := styles.CreateStyle(blockSize, 10, 5, 5)
 	style.SetTheme("default")
 	// stage := new(stage.Stage)
 
@@ -42,7 +48,7 @@ func run(window *app.Window) error {
 	// default first page
 	router.To("stage")
 
-	router.Add("stage", stage.NewStage(style, 9))
+	router.Add("stage", stage.NewStage(style, int64(seed)))
 	// router.Add("home", nil)
 	// router.Add("menu", nil)
 

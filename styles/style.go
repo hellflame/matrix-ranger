@@ -26,7 +26,7 @@ func CreateStyle(size, count, round, space int) *Style {
 	s := &Style{
 		BlockCount:       count,
 		StageInnerOffset: size,
-		OffsetTop:        size * 2,
+		OffsetTop:        size,
 		OffsetLeft:       size,
 		PileStyle: PileStyle{
 			BlockSize:  size,
